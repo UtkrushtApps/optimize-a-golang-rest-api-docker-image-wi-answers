@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Only expose to localhost, not 0.0.0.0 by default (best practice)
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      # Example: pass env vars for the app (customize as needed)
+      # - APP_ENV=production
+    user: "10001:10001" # Ensure non-root
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    # Limit memory & CPU
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: '256M'
+        reservations:
+          cpus: '0.25'
+          memory: '128M'
+    volumes:
+      - api-data:/app/data
+    # Security best practices
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Drop Linux capabilities for security (if not required by app)
+    cap_drop:
+      - ALL
+    # Set minimal privileges
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  api-data:
